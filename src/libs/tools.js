@@ -1,5 +1,5 @@
 export const forEach = (arr, fn) => {
-  if (!arr.length || !fn) return
+  if (!arr||!arr.length || !fn) return
   let i = -1
   let len = arr.length
   while (++i < len) {
@@ -39,14 +39,18 @@ export const getUnion = (arr1, arr2) => {
  * @description 判断要查询的数组是否至少有一个元素包含在目标数组中
  */
 export const hasOneOf = (targetarr, arr) => {
-  return targetarr.some(_ => arr.indexOf(_) > -1)
+  // return targetarr.some(_ => arr.indexOf(_) > -1)
+  if (targetarr && targetarr.length && arr && arr.length)
+    return targetarr.some(to => arr.indexOf(to) > -1)
+  else
+    return false;
 }
 
 /**
  * @param {String|Number} value 要验证的字符串或数值
  * @param {*} validList 用来验证的列表
  */
-export function oneOf (value, validList) {
+export function oneOf(value, validList) {
   for (let i = 0; i < validList.length; i++) {
     if (value === validList[i]) {
       return true

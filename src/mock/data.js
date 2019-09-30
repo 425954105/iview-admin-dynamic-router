@@ -103,3 +103,7 @@ export const routersData = [{
   }]
 }]
 ///////////动态路由的数据
+/////用户具有的菜单权限名字的数组
+export const MenuPerms = ['Pet', 'PetDog', 'PetCat', 'PetPig', 'PetPigFemale', 'PetPigMale'
+  , 'components', 'tree_select_page','count_to_page','drag_list_page'
+]

@@ -3,7 +3,7 @@ import Router from 'vue-router'
 import routes from './routers'
 import store from '@/store'
 import iView from 'iview'
-import {setToken, getToken, canTurnTo, setTitle} from '@/libs/util'
+import {setToken, getToken, setTitle} from '@/libs/util'
 import config from '@/config'
 
 const {homeName} = config
@@ -15,32 +15,37 @@ const router = new Router({
 })
 const LOGIN_PAGE_NAME = 'login'
 
-const turnTo = (to, access, next) => {
-  // if (canTurnTo(to.name, access, routes)) next() // 有权限，可访问
-  if (1 === 1) next() //权限先关闭，方便测试
-  else next({replace: true, name: 'error_401'}) // 无权限，重定向到401页面
-}
-//ready之后，加载路由
-router.onReady(() => {
-  //如果已经加载了，不管
-  if (store.state.app.hasGetRouter) {
-  } else {//还没加载，加载....
-    store.dispatch('getRouters').then(routers => {
-      //把404放最后
-      router.addRoutes(routers.concat([
-        {
+const initRouters = (store) => {
+  //这个人登录了已经
+  if (store.state.user.hasGetInfo) {
+    //路由加载过了
+    if (store.state.app.hasGetRouter && store.state.app.routers && store.state.app.routers.length > 0) {
+      console.log("已经加载过了路由")
+    } else {
+      //加载路由
+      console.log("开始加载路由权限...")
+      store.dispatch('getUserMenus').then(routers => {
+        //此处routers已经是按照权限过滤后的路由了，没权限的，不加入路由，无法访问
+        //路由重置一下把404放最后
+        const newRouter = new Router({
+          routes,
+          mode: config.routerModel
+        })
+        router.matcher = newRouter.matcher;
+        //把404加最后面，如果用router.push({name:'xxxx'})这种的话，404页面可能空白，用path:'/aa/bb'
+        router.addRoutes(routers.concat([{
           path: '*',
-          name: 'Error404',
+          name: 'error_404',
           meta: {
             hideInMenu: true
           },
           component: () => import(/* webpackChunkName: "404" */'@/view/error-page/404.vue')
-        }
-      ]))
-    }).finally(() => {
-    })
+        }]))
+      }).finally(() => {
+      })
+    }
   }
-})
+}
 router.beforeEach((to, from, next) => {
   iView.LoadingBar.start()
   const token = getToken()
@@ -59,11 +64,12 @@ router.beforeEach((to, from, next) => {
     })
   } else {
     if (store.state.user.hasGetInfo) {
-      turnTo(to, store.state.user.access, next)
+      initRouters(store)
+      next()
     } else {
       store.dispatch('getUserInfo').then(user => {
-        // 拉取用户信息，通过用户权限和跳转的页面的name来判断是否有权限访问;access必须是一个数组，如：['super_admin'] ['super_admin', 'admin']
-        turnTo(to, user.access, next)
+        initRouters(store)
+        next()
       }).catch(() => {
         setToken('')
         next({

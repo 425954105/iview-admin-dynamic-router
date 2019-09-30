@@ -10,15 +10,18 @@ import {
   getRouteTitleHandled,
   localSave,
   localRead,
+  filterUserRouter,
   //处理动态路由的方法引入一下
-  backendMenusToRouters
+  backendMenusToRouters,
+  getUserMenuByRouter
 } from '@/libs/util'
 import {saveErrorLogger} from '@/api/data'
 import router from '@/router'
 import routers from '@/router/routers'
 import config from '@/config'
 /////加载动态路由的请求引入一下
-import {getRouterReq} from '@/api/routers'
+import {getRouterReq, getUserPerms} from '@/api/routers'
+import dynamicRouters from '@/router/dynamic-routers'
 
 const {homeName} = config
 
@@ -46,7 +49,8 @@ export default {
   getters: {
     // menuList: (state, getters, rootState) => getMenuByRouter(routers, rootState.user.access),
     //把routers.js里的路由跟动态加载的合一起作为左侧导航菜单
-    menuList: (state, getters, rootState) => getMenuByRouter(routers.concat(state.routers), rootState.user.access),
+    // menuList: (state, getters, rootState) => getMenuByRouter(routers.concat(state.routers), rootState.user.access),
+    menuList: (state, getters, rootState) => getUserMenuByRouter(routers.concat(state.routers)),
     errorCount: state => state.errorList.length
   },
   mutations: {
@@ -107,6 +111,27 @@ export default {
     }
   },
   actions: {
+    /**
+     * 从后台获取用户拥有的菜单权限数组
+     * @param commit
+     * @returns {Promise<unknown>}
+     */
+    getUserMenus({commit}) {
+      return new Promise((resolve, reject) => {
+        try {
+          getUserPerms().then(res => {
+            let routers = filterUserRouter(dynamicRouters, res.data)
+            commit('setRouters', routers)
+            commit('setHasGetRouter', true)
+            resolve(routers)
+          }).catch(err => {
+            reject(err)
+          })
+        } catch (error) {
+          reject(error)
+        }
+      })
+    },
     /**
      * 获取系统路由
      * @param commit

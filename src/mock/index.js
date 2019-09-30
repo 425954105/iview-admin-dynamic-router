@@ -1,7 +1,7 @@
 import Mock from 'mockjs'
 import {login, logout, getUserInfo} from './login'
 //把动态路由数据引入一下
-import {getTableData, getDragList, uploadImage, getOrgData, getTreeSelectData, routersData} from './data'
+import {getTableData, getDragList, uploadImage, getOrgData, getTreeSelectData, routersData,MenuPerms} from './data'
 import {getMessageInit, getContentByMsgId, hasRead, removeReaded, restoreTrash, messageCount} from './user'
 
 // 配置Ajax请求延时，可用来测试网络延迟大时项目中一些效果
@@ -28,4 +28,6 @@ Mock.mock(/\/get_org_data/, getOrgData)
 Mock.mock(/\/get_tree_select_data/, getTreeSelectData)
 //////////动态路由
 Mock.mock(/\/sys\/routers/, routersData)
+////权限数组
+Mock.mock(/\/user\/menus/, MenuPerms)
 export default Mock

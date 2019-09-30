@@ -14,3 +14,15 @@ export const getRouterReq = (access) => {
     method: 'get'
   })
 }
+
+/**
+ * 获取用户权限数组,组合路由和菜单
+ * @returns {never}
+ * @param params
+ */
+export const getUserPerms = (params) => {
+  return axios.request({
+    url: '/user/menus',
+    method: 'post'
+  })
+}

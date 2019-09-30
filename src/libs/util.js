@@ -1,13 +1,14 @@
 import Cookies from 'js-cookie'
 // cookie保存的天数
 import config from '@/config'
-import { forEach, hasOneOf, objEqual } from '@/libs/tools'
-const { title, cookieExpires, useI18n } = config
+import {forEach, hasOneOf, objEqual} from '@/libs/tools'
+
+const {title, cookieExpires, useI18n} = config
 
 export const TOKEN_KEY = 'token'
 
 export const setToken = (token) => {
-  Cookies.set(TOKEN_KEY, token, { expires: cookieExpires || 1 })
+  Cookies.set(TOKEN_KEY, token, {expires: cookieExpires || 1})
 }
 
 export const getToken = () => {
@@ -54,13 +55,13 @@ export const getMenuByRouter = (list, access) => {
  * @returns {Array}
  */
 export const getBreadCrumbList = (route, homeRoute) => {
-  let homeItem = { ...homeRoute, icon: homeRoute.meta.icon }
+  let homeItem = {...homeRoute, icon: homeRoute.meta.icon}
   let routeMetched = route.matched
   if (routeMetched.some(item => item.name === homeRoute.name)) return [homeItem]
   let res = routeMetched.filter(item => {
     return item.meta === undefined || !item.meta.hideInBread
   }).map(item => {
-    let meta = { ...item.meta }
+    let meta = {...item.meta}
     if (meta.title && typeof meta.title === 'function') {
       meta.__titleIsFunction__ = true
       meta.title = meta.title(route)
@@ -75,12 +76,12 @@ export const getBreadCrumbList = (route, homeRoute) => {
   res = res.filter(item => {
     return !item.meta.hideInMenu
   })
-  return [{ ...homeItem, to: homeRoute.path }, ...res]
+  return [{...homeItem, to: homeRoute.path}, ...res]
 }
 
 export const getRouteTitleHandled = (route) => {
-  let router = { ...route }
-  let meta = { ...route.meta }
+  let router = {...route}
+  let meta = {...route.meta}
   let title = ''
   if (meta.title) {
     if (typeof meta.title === 'function') {
@@ -94,7 +95,7 @@ export const getRouteTitleHandled = (route) => {
 }
 
 export const showTitle = (item, vm) => {
-  let { title, __titleIsFunction__ } = item.meta
+  let {title, __titleIsFunction__} = item.meta
   if (!title) return
   if (useI18n) {
     if (title.includes('{{') && title.includes('}}') && useI18n) title = title.replace(/({{[\s\S]+?}})/, (m, str) => str.replace(/{{([\s\S]*)}}/, (m, _) => vm.$t(_.trim())))
@@ -144,10 +145,10 @@ export const getHomeRoute = (routers, homeName = 'home') => {
  * @description 如果该newRoute已经存在则不再添加
  */
 export const getNewTagList = (list, newRoute) => {
-  const { name, path, meta } = newRoute
+  const {name, path, meta} = newRoute
   let newList = [...list]
   if (newList.findIndex(item => item.name === name) >= 0) return newList
-  else newList.push({ name, path, meta })
+  else newList.push({name, path, meta})
   return newList
 }
 
@@ -433,3 +434,59 @@ const backendMenuToRoute = (menu) => {
   return route
 }
 ///////////////动态路由
+/**
+ * @param {Array} list 通过路由列表得到菜单列表
+ * @param access
+ * @returns {Array}
+ */
+export const getUserMenuByRouter = (list) => {
+  let res = []
+  forEach(list, item => {
+    //meta没配置，或者配置了，但hideInMenu=false
+    if (!item.meta || (item.meta && !item.meta.hideInMenu)) {
+      let obj = {
+        icon: (item.meta && item.meta.icon) || '',
+        name: item.name,
+        meta: item.meta
+      }
+      //有下级子元素或者showAlways=true并且还有权限访问，继续递归处理下级
+      if ((hasChild(item) || (item.meta && !item.meta.showAlways))) {
+        obj.children = getUserMenuByRouter(item.children)
+      }
+      //如果配置了href,设置href
+      if (item.meta && item.meta.href) obj.href = item.meta.href
+      //加入
+      res.push(obj)
+    }
+  })
+  return res
+}
+/**
+ * 筛选用户的路由
+ * 从dynamic-routes.js中读取所有路由
+ * 与用户的access权限进行对比，留下具有权限的路由，动态加入
+ * @param routers dynamic-routes.js配置
+ * @param access 用户权限
+ * @returns {[]}
+ */
+export const filterUserRouter = (routers, access) => {
+  let res = []
+  forEach(routers, item => {
+      //没meta的自动加入
+      // if (!item.meta || (item.meta && !item.meta.hideInMenu)) {
+      //必须有meta而且不隐藏的
+      if ((item.meta && !item.meta.hideInMenu && item.meta.access && item.meta.access.length > 0)) {
+        let obj = item;
+        if ((hasChild(item)) && showThisMenuEle(item, access)) {
+          obj.children = filterUserRouter(item.children, access)
+        }
+        //如果配置了href,设置href
+        if (item.meta && item.meta.href) obj.href = item.meta.href
+        //如果本节点有权限，加入
+        if (showThisMenuEle(item, access))
+          res.push(obj)
+      }
+    }
+  )
+  return res
+}
